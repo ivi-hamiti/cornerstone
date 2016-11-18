@@ -1,4 +1,3 @@
-/*! cornerstone - v0.9.0 - 2016-11-18 | (c) 2014 Chris Hafey | https://github.com/chafey/cornerstone */
 if (typeof cornerstone === 'undefined') {
     cornerstone = {
         internal: {},

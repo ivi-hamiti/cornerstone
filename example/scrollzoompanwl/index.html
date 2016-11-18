@@ -1,5 +1,6 @@
 <!DOCTYPE HTML>
 <html>
+
 <head>
     <!-- twitter bootstrap CSS stylesheet - not required by cornerstone -->
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
@@ -9,64 +10,57 @@
 
 
 </head>
+
 <body>
-<div class="container">
+    <div class="container">
 
-    <h1>
-        scrollzoompanwl/index.html
-    </h1>
+        <h1>
+            scrollzoompanwl/index.html
+        </h1>
 
-    This is an example of interactive series scroll, pan, zoom and window/level with HTML
-    based overlays.
+        This is an example of interactive series scroll, pan, zoom and window/level with HTML based overlays.
 
-    <br>
-    <br>
+        <br>
+        <br> Controls:
+        <ul>
+            <li>Left click drag - window/level</li>
+            <li>Middle Mouse button drag - pan</li>
+            <li>Right click drag - zoom</li>
+            <li>Mouse wheel - scroll images</li>
+        </ul>
 
-    Controls:
-    <ul>
-        <li>Left click drag - window/level</li>
-        <li>Middle Mouse button drag - pan</li>
-        <li>Right click drag - zoom</li>
-        <li>Mouse wheel - scroll images</li>
-    </ul>
+        <button id="x256" class="btn">256x256</button>
+        <button id="x512" class="btn">512x512</button>
+        <button id="invert" class="btn">Toggle Invert</button>
+        <button id="interpolation" class="btn">Toggle Interpolation</button>
+        <button id="hflip" class="btn">Horizontal Flip</button>
+        <button id="vflip" class="btn">Vertical Flip</button>
+        <button id="rotate" class="btn">Rotate 90</button>
 
-    <button id="x256" class="btn">256x256</button>
-    <button id="x512" class="btn">512x512</button>
-    <button id="invert" class="btn">Toggle Invert</button>
-    <button id="interpolation" class="btn">Toggle Interpolation</button>
-    <button id="hflip" class="btn">Horizontal Flip</button>
-    <button id="vflip" class="btn">Vertical Flip</button>
-    <button id="rotate" class="btn">Rotate 90</button>
+        <div id="dicomImageWrapper" style="width:512px;height:512px;position:relative;color: white;" class="cornerstone-enabled-image"
+            oncontextmenu="return false" unselectable='on' onselectstart='return false;' onmousedown='return false;'>
+            <div id="dicomImage" oncontextmenu="return false" style="width:512px;height:512px;top:0px;left:0px; position:absolute">
+            </div>
+            <div id="topleft" style="position: absolute;top:0px; left:0px">
+                Patient Name
+            </div>
+            <div id="topright" style="position: absolute;top:0px; right:0px">
+                Render Time:
+            </div>
+            <div id="bottomright" style="position: absolute;bottom:0px; right:0px">
+                Zoom:
+            </div>
+            <div id="bottomleft" style="position: absolute;bottom:0px; left:0px">
+                WW/WC:
+            </div>
 
-    <div id="dicomImageWrapper" style="width:512px;height:512px;position:relative;color: white;"
-         class="cornerstone-enabled-image"
-         oncontextmenu="return false"
-         unselectable='on'
-         onselectstart='return false;'
-         onmousedown='return false;'>
-        <div id="dicomImage" oncontextmenu="return false"
-             style="width:512px;height:512px;top:0px;left:0px; position:absolute">
         </div>
-        <div id="topleft" style="position: absolute;top:0px; left:0px">
-            Patient Name
-        </div>
-        <div id="topright" style="position: absolute;top:0px; right:0px">
-            Render Time:
-        </div>
-        <div id="bottomright" style="position: absolute;bottom:0px; right:0px">
-            Zoom:
-        </div>
-        <div id="bottomleft" style="position: absolute;bottom:0px; left:0px">
-            WW/WC:
-        </div>
-
+        <div><span id="coords"></span></div>
     </div>
-    <div><span id="coords"></span></div>
-</div>
 </body>
 
 <!-- cornerstone depends on jQuery so it must be loaded first-->
-<script src="../jquery.min.js"></script>
+<!--<script src="../jquery.min.js"></script>-->
 
 <!-- include the cornerstone library -->
 <script src="../../dist/cornerstone.js"></script>
@@ -75,9 +69,11 @@
 <script src="../exampleImageIdLoader.js"></script>
 
 <script>
+    var lastX = 0;
+    var lastY = 0;
+    var mouseButton;
 
-
-    $(document).ready(function() {
+    document.addEventListener('DOMContentLoaded', function() {
 
         var imageIds = [
             'example://1',
@@ -95,24 +91,25 @@
         }
 
         // image enable the element
-        var element = $('#dicomImage').get(0);
+        var element = document.getElementById('dicomImage');
         cornerstone.enable(element);
 
         // set event handlers
-        function onImageRendered(e, eventData) {
-            $('#topright').text("Render Time:" + eventData.renderTimeInMs + " ms");
+        function onImageRendered(e) {
+            document.getElementById('topright').textContent = "Render Time:" + e.data.renderTimeInMs + " ms";
         }
-        $(element).on("CornerstoneImageRendered", onImageRendered);
+
+        element.addEventListener("CornerstoneImageRendered", onImageRendered);
 
         // setup handlers before we display the image
-        function onImageRendered(e, eventData) {
+        function onImageRendered(e) {
             // set the canvas context to the image coordinate system
-            cornerstone.setToPixelCoordinateSystem(eventData.enabledElement, eventData.canvasContext);
+            cornerstone.setToPixelCoordinateSystem(e.data.enabledElement, e.data.canvasContext);
 
             // NOTE: The coordinate system of the canvas is in image pixel space.  Drawing
             // to location 0,0 will be the top left of the image and rows,columns is the bottom
             // right.
-            var context = eventData.canvasContext;
+            var context = e.data.canvasContext;
             context.beginPath();
             context.strokeStyle = 'white';
             context.lineWidth = .5;
@@ -122,12 +119,11 @@
             context.font = "6px Arial";
             context.fillText("Tumor Here", 128, 85);
 
-            $('#topright').text("Render Time:" + cornerstone.lastRenderTimeInMs + " ms");
-            $('#bottomleft').text("WW/WL:" + Math.round(eventData.viewport.voi.windowWidth) + "/" + Math.round(eventData.viewport.voi.windowCenter));
-            $('#bottomright').text("Zoom:" + eventData.viewport.scale.toFixed(2));
+            document.getElementById('topright').textContent = "Render Time:" + cornerstone.lastRenderTimeInMs + " ms";
+            document.getElementById('bottomleft').textContent = "WW/WL:" + Math.round(e.data.viewport.voi.windowWidth) + "/" + Math.round(e.data.viewport.voi.windowCenter);
+            document.getElementById('bottomright').textContent = "Zoom:" + e.data.viewport.scale.toFixed(2);
 
         }
-        $(element).on("CornerstoneImageRendered", onImageRendered);
 
         // load and display the image
         var imagePromise = updateTheImage(0);
@@ -135,53 +131,58 @@
         // add handlers for mouse events once the image is loaded.
         imagePromise.then(function() {
             viewport = cornerstone.getViewport(element);
-            $('#bottomright').text("Zoom: " + viewport.scale.toFixed(2) + "x");
-            $('#bottomleft').text("WW/WC:" + Math.round(viewport.voi.windowWidth) + "/" + Math.round(viewport.voi.windowCenter));
+            document.getElementById('bottomright').textContent = "Zoom: " + viewport.scale.toFixed(2) + "x";
+            document.getElementById('bottomleft').textContent = "WW/WC:" + Math.round(viewport.voi.windowWidth) + "/" + Math.round(viewport.voi.windowCenter);
 
             // add event handlers to pan image on mouse move
-            $('#dicomImage').mousedown(function (e) {
-                var lastX = e.pageX;
-                var lastY = e.pageY;
+            document.getElementById('dicomImage').addEventListener('mousedown', function (e) {
+                lastX = e.pageX;
+                lastY = e.pageY;
+                mouseButton = e.which;
 
-                var mouseButton = e.which;
-
-                $(document).mousemove(function (e) {
-                    var deltaX = e.pageX - lastX,
-                            deltaY = e.pageY - lastY;
-                    lastX = e.pageX;
-                    lastY = e.pageY;
-
-                    if (mouseButton == 1) {
-                        var viewport = cornerstone.getViewport(element);
-                        viewport.voi.windowWidth += (deltaX / viewport.scale);
-                        viewport.voi.windowCenter += (deltaY / viewport.scale);
-                        cornerstone.setViewport(element, viewport);
-                        $('#bottomleft').text("WW/WL:" + Math.round(viewport.voi.windowWidth) + "/" + Math.round(viewport.voi.windowCenter));
-                    }
-                    else if (mouseButton == 2) {
-                        var viewport = cornerstone.getViewport(element);
-                        viewport.translation.x += (deltaX / viewport.scale);
-                        viewport.translation.y += (deltaY / viewport.scale);
-                        cornerstone.setViewport(element, viewport);
-                    }
-                    else if (mouseButton == 3) {
-                        var viewport = cornerstone.getViewport(element);
-                        viewport.scale += (deltaY / 100);
-                        cornerstone.setViewport(element, viewport);
-                        $('#bottomright').text("Zoom: " + viewport.scale.toFixed(2) + "x");
-                    }
-                });
-
-                $(document).mouseup(function (e) {
-                    $(document).unbind('mousemove');
-                    $(document).unbind('mouseup');
-                });
+                document.addEventListener('mousemove', documentMouseMove);
+                document.addEventListener('mouseup', documentMouseUp);
             });
 
-            $('#dicomImage').on('mousewheel DOMMouseScroll', function (e) {
+            function documentMouseMove (e) {
+                var deltaX = e.pageX - lastX,
+                        deltaY = e.pageY - lastY;
+                lastX = e.pageX;
+                lastY = e.pageY;
+
+                if (mouseButton == 1) {
+                    var viewport = cornerstone.getViewport(element);
+                    viewport.voi.windowWidth += (deltaX / viewport.scale);
+                    viewport.voi.windowCenter += (deltaY / viewport.scale);
+                    cornerstone.setViewport(element, viewport);
+                    document.getElementById('bottomleft').textContent = "WW/WL:" + Math.round(viewport.voi.windowWidth) + "/" + Math.round(viewport.voi.windowCenter);
+                }
+                else if (mouseButton == 2) {
+                    var viewport = cornerstone.getViewport(element);
+                    viewport.translation.x += (deltaX / viewport.scale);
+                    viewport.translation.y += (deltaY / viewport.scale);
+                    cornerstone.setViewport(element, viewport);
+                }
+                else if (mouseButton == 3) {
+                    var viewport = cornerstone.getViewport(element);
+                    viewport.scale += (deltaY / 100);
+                    cornerstone.setViewport(element, viewport);
+                    document.getElementById('bottomright').textContent = "Zoom: " + viewport.scale.toFixed(2) + "x";
+                }
+            }
+
+            function documentMouseUp (e) {
+                document.removeEventListener('mousemove', documentMouseMove);
+                document.removeEventListener('mouseup', documentMouseUp);
+            }
+
+            // document.getElementById('dicomImage').addEventListener('DOMMouseScroll', dicomImageScroll);
+            document.getElementById('dicomImage').addEventListener('mousewheel', dicomImageScroll);
+
+            function dicomImageScroll(e) {
                 // Firefox e.originalEvent.detail > 0 scroll back, < 0 scroll forward
                 // chrome/safari e.originalEvent.wheelDelta < 0 scroll back, > 0 scroll forward
-                if (e.originalEvent.wheelDelta < 0 || e.originalEvent.detail > 0) {
+                if (e.wheelDelta < 0 || e.detail > 0) {
                     if (currentImageIndex == 0) {
                         updateTheImage(1);
                     }
@@ -192,61 +193,70 @@
                 }
                 //prevent page fom scrolling
                 return false;
-            });
+            }
 
             // Add event handler to the ww/wc apply button
-            $('#x256').click(function (e) {
-                $('#dicomImage').width(256).height(256);
-                $('#dicomImageWrapper').width(256).height(256);
+            document.getElementById('x256').addEventListener('click', function (e) {
+                var dicomImage = document.getElementById('dicomImage');
+                dicomImage.style.width = dicomImage.style.height = "256px";
+
+                var dicomImage = document.getElementById('dicomImageWrapper');
+                dicomImage.style.width = dicomImage.style.height = "256px";
+
                 cornerstone.resize(element);
             });
 
-            $('#x512').click(function (e) {
-                $('#dicomImage').width(512).height(512);
-                $('#dicomImageWrapper').width(512).height(512);
+            document.getElementById('x512').addEventListener('click', function (e) {
+                var dicomImage = document.getElementById('dicomImage');
+                dicomImage.style.width = dicomImage.style.height = "512px";
+
+                var dicomImage = document.getElementById('dicomImageWrapper');
+                dicomImage.style.width = dicomImage.style.height = "512px";
+                
                 cornerstone.resize(element);
             });
 
-            $('#invert').click(function (e) {
-                var viewport = cornerstone.getViewport(element);
-                if (viewport.invert === true) {
-                    viewport.invert = false;
-                } else {
-                    viewport.invert = true;
-                }
-                cornerstone.setViewport(element, viewport);
-            });
+            // $('#invert').click(function (e) {
+            //     var viewport = cornerstone.getViewport(element);
+            //     if (viewport.invert === true) {
+            //         viewport.invert = false;
+            //     } else {
+            //         viewport.invert = true;
+            //     }
+            //     cornerstone.setViewport(element, viewport);
+            // });
 
-            $('#interpolation').click(function (e) {
-                var viewport = cornerstone.getViewport(element);
-                if (viewport.pixelReplication === true) {
-                    viewport.pixelReplication = false;
-                } else {
-                    viewport.pixelReplication = true;
-                }
-                cornerstone.setViewport(element, viewport);
-            });
-            $('#hflip').click(function (e) {
-                var viewport = cornerstone.getViewport(element);
-                viewport.hflip = !viewport.hflip;
-                cornerstone.setViewport(element, viewport);
-            });
-            $('#vflip').click(function (e) {
-                var viewport = cornerstone.getViewport(element);
-                viewport.vflip = !viewport.vflip;
-                cornerstone.setViewport(element, viewport);
-            });
-            $('#rotate').click(function (e) {
-                var viewport = cornerstone.getViewport(element);
-                viewport.rotation+=90;
-                cornerstone.setViewport(element, viewport);
-            });
-            $(element).mousemove(function(event)
+            // $('#interpolation').click(function (e) {
+            //     var viewport = cornerstone.getViewport(element);
+            //     if (viewport.pixelReplication === true) {
+            //         viewport.pixelReplication = false;
+            //     } else {
+            //         viewport.pixelReplication = true;
+            //     }
+            //     cornerstone.setViewport(element, viewport);
+            // });
+            // $('#hflip').click(function (e) {
+            //     var viewport = cornerstone.getViewport(element);
+            //     viewport.hflip = !viewport.hflip;
+            //     cornerstone.setViewport(element, viewport);
+            // });
+            // $('#vflip').click(function (e) {
+            //     var viewport = cornerstone.getViewport(element);
+            //     viewport.vflip = !viewport.vflip;
+            //     cornerstone.setViewport(element, viewport);
+            // });
+            // $('#rotate').click(function (e) {
+            //     var viewport = cornerstone.getViewport(element);
+            //     viewport.rotation+=90;
+            //     cornerstone.setViewport(element, viewport);
+            // });
+
+            element.addEventListener('mousemove', function(event)
             {
                 var pixelCoords = cornerstone.pageToPixel(element, event.pageX, event.pageY);
                 var x = event.pageX;
                 var y = event.pageY;
-                $('#coords').text("pageX=" + event.pageX + ", pageY=" + event.pageY + ", pixelX=" + pixelCoords.x + ", pixelY=" + pixelCoords.y);
+                document.getElementById('coords').textContent = "pageX=" + event.pageX + ", pageY=" + event.pageY + ", pixelX=" + pixelCoords.x + ", pixelY=" + pixelCoords.y;
             });
         });
 
@@ -255,4 +265,5 @@
     });
 
 </script>
+
 </html>

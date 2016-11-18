@@ -15,9 +15,12 @@
         var eventData = {
             element: element
         };
-        $(enabledElement.element).trigger("CornerstoneInvalidated", eventData);
+        cornerstone.trigger(enabledElement.element, "CornerstoneInvalidated", eventData);
     }
 
     // module exports
     cornerstone.invalidate = invalidate;
 }(cornerstone));
+
+
+document.get

@@ -59,9 +59,9 @@
             sizeInBytes: width * height * 2
         };
 
-        var deferred = $.Deferred();
-        deferred.resolve(image);
-        return deferred;
+        return new Promise(function(resolve, reject) {
+            resolve(image);
+        });
     }
 
     // register our imageLoader plugin with cornerstone
